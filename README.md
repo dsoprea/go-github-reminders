@@ -10,12 +10,13 @@ This tool produces a daily digest of open Github issues with recent activity tha
 
 Issue selection involves the following factors:
 
-- You are subscribed.
+- You are subscribed to the issue. 
+  - Owners, assignees, commentators, and watchers are automatically subscribed.
 - The issue is open.
 - The issue has been updated within a certain period of time. The default is six months.
 - You have not responded within a certain period of time. The default is three days.
 
-To stop receiving notifications for an issue, either respond to it or unsubscribe from it.
+To temporarily stop receiving notifications for an issue, respond to it. To indefinitely stop receiving notifications for an issue, unsubscribe from it (in Github).
 
 
 # Installing
