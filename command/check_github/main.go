@@ -10,6 +10,7 @@ import (
     "github.com/dsoprea/go-time-parse"
     "github.com/google/go-github/github"
     "github.com/jessevdk/go-flags"
+    "github.com/olekukonko/tablewriter"
 )
 
 const (
@@ -113,10 +114,25 @@ func handleIssueReminders(issueRemindersArguments issueRemindersParameters) (err
     issues, err := getIssues(issueRemindersArguments)
     log.PanicIf(err)
 
+    table := tablewriter.NewWriter(os.Stdout)
+    table.SetHeader([]string{"Updated At", "URL", "Repository", "User", "Title"})
+    table.SetColWidth(50)
+
     for _, issue := range issues {
         repositoryName := ghreminder.DistillableRepositoryUrl(*issue.RepositoryURL).Name()
-        fmt.Printf("%s %s %s %s %s\n", *issue.UpdatedAt, *issue.HTMLURL, repositoryName, *issue.User.Login, *issue.Title)
+
+        row := []string{
+            issue.UpdatedAt.String(),
+            *issue.HTMLURL,
+            repositoryName,
+            *issue.User.Login,
+            *issue.Title,
+        }
+
+        table.Append(row)
     }
+
+    table.Render()
 
     return nil
 }
