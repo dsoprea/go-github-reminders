@@ -115,7 +115,7 @@ func handleIssueReminders(issueRemindersArguments issueRemindersParameters) (err
 
     for _, issue := range issues {
         repositoryName := ghreminder.DistillableRepositoryUrl(*issue.RepositoryURL).Name()
-        fmt.Printf("%s %s %s %s %s\n", *issue.UpdatedAt, *issue.URL, repositoryName, *issue.User.Login, *issue.Title)
+        fmt.Printf("%s %s %s %s %s\n", *issue.UpdatedAt, *issue.HTMLURL, repositoryName, *issue.User.Login, *issue.Title)
     }
 
     return nil
