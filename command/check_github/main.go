@@ -1,6 +1,7 @@
 package main
 
 import (
+    "bytes"
     "context"
     "fmt"
     "os"
@@ -14,8 +15,7 @@ import (
 )
 
 const (
-    // TODO(dustin): !! Does "is:issue" exclude PRs?
-    DefaultQuery = "involves:{{.username}} is:issue is:open updated:>={{.earliest_timestamp}}"
+    EmailSubject = "Some Github issues need attention"
 )
 
 type AuthenticationMixinParameters struct {
@@ -28,6 +28,7 @@ type issueRemindersParameters struct {
 
     SearchIntervalPhrase string `long:"search-distance" description:"Time range to look for activity." default:"6 months ago"`
     NearIntervalPhrase   string `long:"near-distance" description:"Time range to consider updates too recent to remind." default:"3 days ago"`
+    EmailAddress         string `long:"email" description:"Send to the given email using an unauthenticated local SMTP server. In most cases it might be preferable to just capture the output and send the email using a more-advanced configuration elsewhere."`
 }
 
 type subcommands struct {
@@ -114,7 +115,13 @@ func handleIssueReminders(issueRemindersArguments issueRemindersParameters) (err
     issues, err := getIssues(issueRemindersArguments)
     log.PanicIf(err)
 
-    table := tablewriter.NewWriter(os.Stdout)
+    if len(issues) == 0 {
+        return nil
+    }
+
+    b := new(bytes.Buffer)
+
+    table := tablewriter.NewWriter(b)
     table.SetHeader([]string{"Updated At", "URL", "Repository", "User", "Title"})
     table.SetColWidth(50)
 
@@ -133,6 +140,13 @@ func handleIssueReminders(issueRemindersArguments issueRemindersParameters) (err
     }
 
     table.Render()
+
+    fmt.Printf(b.String())
+
+    if issueRemindersArguments.EmailAddress != "" {
+        err = ghreminder.SendEmailToLocal(issueRemindersArguments.EmailAddress, EmailSubject, b.String())
+        log.PanicIf(err)
+    }
 
     return nil
 }
