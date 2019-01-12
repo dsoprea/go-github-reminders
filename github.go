@@ -46,8 +46,9 @@ func GetIssues(ctx context.Context, gc *github.Client, searchIntervalDuration ti
 }
 
 // hasRecentlyPosted returns whether the current user has posted to the given
-// issue very recently.
-func HasRecentlyPosted(ctx context.Context, gc *github.Client, username string, nearIntervalDuration time.Duration, issue *github.Issue) (recentlyPosted bool, err error) {
+// issue very recently. This is used to determine which of the issues we have
+// been involved in should be ignored for now.
+func HasVeryRecentlyPosted(ctx context.Context, gc *github.Client, username string, nearIntervalDuration time.Duration, issue *github.Issue) (recentlyPosted bool, err error) {
     defer func() {
         if state := recover(); state != nil {
             err = log.Wrap(state.(error))
@@ -65,25 +66,28 @@ func HasRecentlyPosted(ctx context.Context, gc *github.Client, username string, 
         Since:     nearIntervalTimestamp,
     }
 
-    for {
-        commentsThis, response, err := gc.Issues.ListComments(ctx, owner, repository, *issue.Number, ilco)
-        log.PanicIf(err)
+    commentsThis, _, err := gc.Issues.ListComments(ctx, owner, repository, *issue.Number, ilco)
+    log.PanicIf(err)
 
-        for _, comment := range commentsThis {
-            if comment.UpdatedAt.After(nearIntervalTimestamp) == true {
-                break
-            } else if *comment.User.Login == username {
-                return true, nil
-            }
+    // If there were any comments recently.
+    if len(commentsThis) > 0 {
+        comment := commentsThis[0]
+        postedByCurrentUser := (*comment.User.Login == username)
+
+        // If the latest comment returned wasn't posted by us, return false.
+        // We should respond.
+        if postedByCurrentUser == false {
+            return false, nil
         }
 
-        if response.NextPage == 0 {
-            break
+        // If the latest comment was posted by us, return true. No response is
+        // currently required.
+        if postedByCurrentUser == true {
+            return true, nil
         }
-
-        ilco.Page = response.NextPage
     }
 
+    // We haven't posted any very-recent messages.
     return false, nil
 }
 

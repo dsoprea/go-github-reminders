@@ -91,7 +91,7 @@ func getIssues(issueRemindersArguments issueRemindersParameters) (issues []*gith
 
     filtered := make([]*github.Issue, 0)
     for _, issue := range issues {
-        hasRecentlyUpdated, err := ghreminder.HasRecentlyPosted(ctx, gc, issueRemindersArguments.Username, nearIntervalDuration, issue)
+        hasRecentlyUpdated, err := ghreminder.HasVeryRecentlyPosted(ctx, gc, issueRemindersArguments.Username, nearIntervalDuration, issue)
         log.PanicIf(err)
 
         if hasRecentlyUpdated == true {
