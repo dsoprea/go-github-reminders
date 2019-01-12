@@ -116,6 +116,7 @@ func handleIssueReminders(issueRemindersArguments issueRemindersParameters) (err
     log.PanicIf(err)
 
     if len(issues) == 0 {
+        fmt.Printf("You currently do not have or need any reminders.\n")
         return nil
     }
 
