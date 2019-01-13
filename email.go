@@ -7,6 +7,8 @@ import (
     "net/smtp"
 
     "github.com/dsoprea/go-logging"
+    "github.com/google/go-github/github"
+    "github.com/olekukonko/tablewriter"
 )
 
 const (
@@ -45,4 +47,70 @@ func SendEmailToLocal(toEmail, subject, body string) (err error) {
     log.PanicIf(err)
 
     return nil
+}
+
+func GetTextEmail(issues []*github.Issue) (textContent string, err error) {
+    defer func() {
+        if state := recover(); state != nil {
+            err = log.Wrap(state.(error))
+        }
+    }()
+
+    b := new(bytes.Buffer)
+
+    table := tablewriter.NewWriter(b)
+    table.SetHeader([]string{"Updated At", "URL", "Repository", "User", "Title"})
+    table.SetColWidth(50)
+
+    for _, issue := range issues {
+        repositoryName := DistillableRepositoryUrl(*issue.RepositoryURL).Name()
+
+        row := []string{
+            issue.UpdatedAt.String(),
+            *issue.HTMLURL,
+            repositoryName,
+            *issue.User.Login,
+            *issue.Title,
+        }
+
+        table.Append(row)
+    }
+
+    table.Render()
+
+    return b.String(), nil
+}
+
+func GetHtmlEmail(issues []*github.Issue) (htmlContent string, err error) {
+    defer func() {
+        if state := recover(); state != nil {
+            err = log.Wrap(state.(error))
+        }
+    }()
+
+    b := new(bytes.Buffer)
+
+    _, err = fmt.Fprintf(b, "<table>\n")
+    log.PanicIf(err)
+
+    _, err = fmt.Fprintf(b, "<tr><th align=\"left\">Updated At</th><th align=\"left\">URL</th><th align=\"left\">Repository</th><th align=\"left\">User</th><th align=\"left\">Title</th></tr>\n")
+    log.PanicIf(err)
+
+    for _, issue := range issues {
+        repositoryName := DistillableRepositoryUrl(*issue.RepositoryURL).Name()
+
+        _, err := fmt.Fprintf(b, "<tr><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td></tr>\n",
+            issue.UpdatedAt.String(),
+            *issue.HTMLURL,
+            repositoryName,
+            *issue.User.Login,
+            *issue.Title,
+        )
+        log.PanicIf(err)
+    }
+
+    _, err = fmt.Fprintf(b, "</table>\n")
+    log.PanicIf(err)
+
+    return b.String(), nil
 }

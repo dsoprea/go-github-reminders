@@ -1,7 +1,6 @@
 package main
 
 import (
-    "bytes"
     "context"
     "fmt"
     "os"
@@ -11,7 +10,6 @@ import (
     "github.com/dsoprea/go-time-parse"
     "github.com/google/go-github/github"
     "github.com/jessevdk/go-flags"
-    "github.com/olekukonko/tablewriter"
 )
 
 const (
@@ -123,10 +121,10 @@ func handleIssueReminders(issueRemindersArguments issueRemindersParameters) (err
 
     var content string
     if issueRemindersArguments.PrintAsHtml == true {
-        content, err = GetHtmlEmail(issues)
+        content, err = ghreminder.GetHtmlEmail(issues)
         log.PanicIf(err)
     } else {
-        content, err = GetTextEmail(issues)
+        content, err = ghreminder.GetTextEmail(issues)
         log.PanicIf(err)
     }
 
@@ -138,72 +136,6 @@ func handleIssueReminders(issueRemindersArguments issueRemindersParameters) (err
     }
 
     return nil
-}
-
-func GetTextEmail(issues []*github.Issue) (textContent string, err error) {
-    defer func() {
-        if state := recover(); state != nil {
-            err = log.Wrap(state.(error))
-        }
-    }()
-
-    b := new(bytes.Buffer)
-
-    table := tablewriter.NewWriter(b)
-    table.SetHeader([]string{"Updated At", "URL", "Repository", "User", "Title"})
-    table.SetColWidth(50)
-
-    for _, issue := range issues {
-        repositoryName := ghreminder.DistillableRepositoryUrl(*issue.RepositoryURL).Name()
-
-        row := []string{
-            issue.UpdatedAt.String(),
-            *issue.HTMLURL,
-            repositoryName,
-            *issue.User.Login,
-            *issue.Title,
-        }
-
-        table.Append(row)
-    }
-
-    table.Render()
-
-    return b.String(), nil
-}
-
-func GetHtmlEmail(issues []*github.Issue) (htmlContent string, err error) {
-    defer func() {
-        if state := recover(); state != nil {
-            err = log.Wrap(state.(error))
-        }
-    }()
-
-    b := new(bytes.Buffer)
-
-    _, err = fmt.Fprintf(b, "<table>\n")
-    log.PanicIf(err)
-
-    _, err = fmt.Fprintf(b, "<tr><th align=\"left\">Updated At</th><th align=\"left\">URL</th><th align=\"left\">Repository</th><th align=\"left\">User</th><th align=\"left\">Title</th></tr>\n")
-    log.PanicIf(err)
-
-    for _, issue := range issues {
-        repositoryName := ghreminder.DistillableRepositoryUrl(*issue.RepositoryURL).Name()
-
-        _, err := fmt.Fprintf(b, "<tr><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td></tr>\n",
-            issue.UpdatedAt.String(),
-            *issue.HTMLURL,
-            repositoryName,
-            *issue.User.Login,
-            *issue.Title,
-        )
-        log.PanicIf(err)
-    }
-
-    _, err = fmt.Fprintf(b, "</table>\n")
-    log.PanicIf(err)
-
-    return b.String(), nil
 }
 
 func main() {
