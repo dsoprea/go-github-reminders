@@ -26,9 +26,10 @@ type AuthenticationMixinParameters struct {
 type issueRemindersParameters struct {
     *AuthenticationMixinParameters
 
-    SearchIntervalPhrase string `long:"search-distance" description:"Time range to look for activity." default:"6 months ago"`
-    NearIntervalPhrase   string `long:"near-distance" description:"Time range to consider updates too recent to remind." default:"3 days ago"`
+    SearchIntervalPhrase string `long:"search-distance" description:"Time range to look for activity" default:"6 months ago"`
+    NearIntervalPhrase   string `long:"near-distance" description:"Time range to consider updates too recent to remind" default:"3 days ago"`
     EmailAddress         string `long:"email" description:"Send to the given email using an unauthenticated local SMTP server. In most cases it might be preferable to just capture the output and send the email using a more-advanced configuration elsewhere."`
+    PrintAsHtml          bool   `long:"html" description:"Print HTML-formatted table"`
 }
 
 type subcommands struct {
@@ -120,16 +121,19 @@ func handleIssueReminders(issueRemindersArguments issueRemindersParameters) (err
         return nil
     }
 
-    textContent, err := GetTextEmail(issues)
-    log.PanicIf(err)
+    var content string
+    if issueRemindersArguments.PrintAsHtml == true {
+        content, err = GetHtmlEmail(issues)
+        log.PanicIf(err)
+    } else {
+        content, err = GetTextEmail(issues)
+        log.PanicIf(err)
+    }
 
-    fmt.Printf(textContent)
+    fmt.Printf(content)
 
     if issueRemindersArguments.EmailAddress != "" {
-        htmlContent, err := GetHtmlEmail(issues)
-        log.PanicIf(err)
-
-        err = ghreminder.SendEmailToLocal(issueRemindersArguments.EmailAddress, EmailSubject, htmlContent)
+        err = ghreminder.SendEmailToLocal(issueRemindersArguments.EmailAddress, EmailSubject, content)
         log.PanicIf(err)
     }
 
