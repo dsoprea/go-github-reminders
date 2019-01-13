@@ -2,8 +2,9 @@ package ghreminder
 
 import (
     "bytes"
+    "fmt"
+    "net/http"
     "net/smtp"
-    "text/template"
 
     "github.com/dsoprea/go-logging"
 )
@@ -20,22 +21,24 @@ func SendEmailToLocal(toEmail, subject, body string) (err error) {
         }
     }()
 
-    messageTemplate := "To: {{.email}}\r\nSubject: {{.subject}}\r\n\r\n{{.body}}\r\n"
-    t, err := template.New("").Parse(messageTemplate)
-    log.PanicIf(err)
+    headers := make(http.Header)
+    headers.Add("To", toEmail)
+    headers.Add("Subject", subject)
+    headers.Add("Content-Type", "text/html")
 
     b := new(bytes.Buffer)
 
-    replacements := map[string]string{
-        "email":   toEmail,
-        "subject": subject,
-        "body":    body,
-    }
+    err = headers.Write(b)
+    log.PanicIf(err)
 
-    err = t.Execute(b, replacements)
+    _, err = fmt.Fprintf(b, "\r\n")
+    log.PanicIf(err)
+
+    _, err = fmt.Fprintf(b, body)
     log.PanicIf(err)
 
     message := b.Bytes()
+
     toEmailList := []string{toEmail}
 
     err = smtp.SendMail(SmtpHostname, nil, FromEmailAddress, toEmailList, []byte(message))
