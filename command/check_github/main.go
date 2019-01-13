@@ -184,7 +184,7 @@ func GetHtmlEmail(issues []*github.Issue) (htmlContent string, err error) {
     _, err = fmt.Fprintf(b, "<table>\n")
     log.PanicIf(err)
 
-    _, err = fmt.Fprintf(b, "<tr><th>Updated At</th><th>URL</th><th>Repository</th><th>User</th><th>Title</th></tr>\n")
+    _, err = fmt.Fprintf(b, "<tr><th align=\"left\">Updated At</th><th align=\"left\">URL</th><th align=\"left\">Repository</th><th align=\"left\">User</th><th align=\"left\">Title</th></tr>\n")
     log.PanicIf(err)
 
     for _, issue := range issues {
