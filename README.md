@@ -66,6 +66,11 @@ $ "${GOPATH}/bin/check_github" issue-reminders --username USERNAME --password PA
 There are a couple of recent issues that need a response, as well as a few older ones needing follow-up.
 
 
+With "--html" and having been sent and received by email (on a schedule):
+
+![HTML-formatted table](https://github.com/dsoprea/go-github-reminders/raw/master/asset/html.png)
+
+
 # Scheduling Execution
 
 Scheduling is not managed by the tool. Just use a scheduler, such as [Cron](https://en.wikipedia.org/wiki/Cron) under Unix/Linux.
