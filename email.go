@@ -99,9 +99,10 @@ func GetHtmlEmail(issues []*github.Issue) (htmlContent string, err error) {
     for _, issue := range issues {
         repositoryName := DistillableRepositoryUrl(*issue.RepositoryURL).Name()
 
-        _, err := fmt.Fprintf(b, "<tr><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td></tr>\n",
+        _, err := fmt.Fprintf(b, "<tr><td>%s</td><td><a href=\"%s\">%d</a></td><td>%s</td><td>%s</td><td>%s</td></tr>\n",
             issue.UpdatedAt.String(),
             *issue.HTMLURL,
+            *issue.Number,
             repositoryName,
             *issue.User.Login,
             *issue.Title,
