@@ -120,6 +120,29 @@ func handleIssueReminders(issueRemindersArguments issueRemindersParameters) (err
         return nil
     }
 
+    textContent, err := GetTextEmail(issues)
+    log.PanicIf(err)
+
+    fmt.Printf(textContent)
+
+    if issueRemindersArguments.EmailAddress != "" {
+        htmlContent, err := GetHtmlEmail(issues)
+        log.PanicIf(err)
+
+        err = ghreminder.SendEmailToLocal(issueRemindersArguments.EmailAddress, EmailSubject, htmlContent)
+        log.PanicIf(err)
+    }
+
+    return nil
+}
+
+func GetTextEmail(issues []*github.Issue) (textContent string, err error) {
+    defer func() {
+        if state := recover(); state != nil {
+            err = log.Wrap(state.(error))
+        }
+    }()
+
     b := new(bytes.Buffer)
 
     table := tablewriter.NewWriter(b)
@@ -142,14 +165,41 @@ func handleIssueReminders(issueRemindersArguments issueRemindersParameters) (err
 
     table.Render()
 
-    fmt.Printf(b.String())
+    return b.String(), nil
+}
 
-    if issueRemindersArguments.EmailAddress != "" {
-        err = ghreminder.SendEmailToLocal(issueRemindersArguments.EmailAddress, EmailSubject, b.String())
+func GetHtmlEmail(issues []*github.Issue) (htmlContent string, err error) {
+    defer func() {
+        if state := recover(); state != nil {
+            err = log.Wrap(state.(error))
+        }
+    }()
+
+    b := new(bytes.Buffer)
+
+    _, err = fmt.Fprintf(b, "<table>\n")
+    log.PanicIf(err)
+
+    _, err = fmt.Fprintf(b, "<tr><th>Updated At</th><th>URL</th><th>Repository</th><th>User</th><th>Title</th></tr>\n")
+    log.PanicIf(err)
+
+    for _, issue := range issues {
+        repositoryName := ghreminder.DistillableRepositoryUrl(*issue.RepositoryURL).Name()
+
+        _, err := fmt.Fprintf(b, "<tr><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td></tr>\n",
+            issue.UpdatedAt.String(),
+            *issue.HTMLURL,
+            repositoryName,
+            *issue.User.Login,
+            *issue.Title,
+        )
         log.PanicIf(err)
     }
 
-    return nil
+    _, err = fmt.Fprintf(b, "</table>\n")
+    log.PanicIf(err)
+
+    return b.String(), nil
 }
 
 func main() {
