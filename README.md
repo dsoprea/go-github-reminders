@@ -68,19 +68,10 @@ There are a couple of recent issues that need a response, as well as a few older
 
 # Scheduling Execution
 
-Scheduling is not managed by the tool. Just use [Cron](https://en.wikipedia.org/wiki/Cron).
+Scheduling is not managed by the tool. Just use a scheduler, such as [Cron](https://en.wikipedia.org/wiki/Cron) under Unix/Linux.
 
-If you're using Cron and would like to send HTML emails, put this at the top of your Cron config:
-
-```
-CONTENT_TYPE="text/html; charset=utf-8"
-```
-
-If you'd like HtML emails for this but not for everything else, put your Cron config into a file of its own in /etc/cron.d/ and place the line above at the top. Make sure you add the additional column specifying the user it should run as. For example, your config might be at "/etc/cron.d/check_github" (making sure the permissions on the file are the same as the others in that path) and look like this:
+If you're using Cron, under Unix/Linux, and would like to send HTML emails or even customize your subject, you can use a command-line mailer, such as the classic `mail` tool, for example:
 
 ```
-CONTENT_TYPE="text/html; charset=utf-8"
-
-# Github reminders
-0 10 * * * dustin **GOPATH**/bin/check_github issue-reminders --username dsoprea --password **GITHUB-PASSWORD** --html
+0 10 * * * dustin **GOPATH**/bin/check_github issue-reminders --username **GITHUB-USERNAME** --password **GITHUB-PASSWORD** --html | mail -a "Content-type: text/html" -s "Github Reminders" **EMAIL-ADDRESS**
 ```
