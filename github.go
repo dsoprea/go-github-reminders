@@ -21,19 +21,34 @@ func GetIssues(ctx context.Context, gc *github.Client, searchIntervalDuration ti
     searchIntervalTimestamp := time.Now().Add(searchIntervalDuration)
 
     ilo := &github.IssueListOptions{
-        Filter:    "subscribed",
+        // "subscribed" doesn't work. Some events that are definitely
+        // subscribed-to by the current user with a very recent updated-time
+        // and a very old created-time still won't show up.
+        Filter:    "all",
         State:     "open",
         Sort:      "updated",
         Direction: "desc",
-        Since:     searchIntervalTimestamp,
     }
 
+    // TODO(dustin): !! Add a command-line parameter that restricts the issues we see to only those assigned to us.
+
     issues = make([]*github.Issue, 0)
+
+ProcessIssues:
     for {
         issuesThis, response, err := gc.Issues.List(ctx, true, ilo)
         log.PanicIf(err)
 
-        issues = append(issues, issuesThis...)
+        for _, issue := range issuesThis {
+            // We need to manage when to stop based on the "updated" timestamp
+            // because the "since" parameter in the query only applies to the
+            // "create" timestamp.
+            if issue.UpdatedAt.Before(searchIntervalTimestamp) == true {
+                break ProcessIssues
+            }
+
+            issues = append(issues, issue)
+        }
 
         if response.NextPage == 0 {
             break
@@ -58,12 +73,12 @@ func HasVeryRecentlyPosted(ctx context.Context, gc *github.Client, username stri
     r := DistillableRepositoryUrl(*issue.RepositoryURL)
     owner, repository := r.OwnerAndRepository()
 
-    nearIntervalTimestamp := time.Now().Add(nearIntervalDuration)
+    nowTime := time.Now()
+    nearIntervalTimestamp := nowTime.Add(nearIntervalDuration)
 
     ilco := &github.IssueListCommentsOptions{
-        Sort:      "created",
+        Sort:      "updated",
         Direction: "desc",
-        Since:     nearIntervalTimestamp,
     }
 
     commentsThis, _, err := gc.Issues.ListComments(ctx, owner, repository, *issue.Number, ilco)
@@ -80,11 +95,15 @@ func HasVeryRecentlyPosted(ctx context.Context, gc *github.Client, username stri
             return false, nil
         }
 
-        // If the latest comment was posted by us, return true. No response is
-        // currently required.
-        if postedByCurrentUser == true {
-            return true, nil
+        // If we get here, the latest comment is by us.
+
+        // It's been long-enough that it's time to follow-up.
+        if nearIntervalTimestamp.Before(nowTime) == true {
+            return false, nil
         }
+
+        // We've very-recently responded.
+        return true, nil
     }
 
     // We haven't posted any very-recent messages.
