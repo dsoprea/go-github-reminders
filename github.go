@@ -11,7 +11,7 @@ import (
 
 // getIssues returns a list of recently-updated, open issues that we're
 // subscribed to.
-func GetIssues(ctx context.Context, gc *github.Client, searchIntervalDuration time.Duration) (issues []*github.Issue, err error) {
+func GetIssues(ctx context.Context, gc *github.Client, searchIntervalDuration time.Duration, justAssigned bool) (issues []*github.Issue, err error) {
     defer func() {
         if state := recover(); state != nil {
             err = log.Wrap(state.(error))
@@ -20,11 +20,20 @@ func GetIssues(ctx context.Context, gc *github.Client, searchIntervalDuration ti
 
     searchIntervalTimestamp := time.Now().Add(searchIntervalDuration)
 
+    // filter is the criteria used to filter issues. "subscribed" is ideal in
+    // concept but doesn't work. Some events that are definitely subscribed-to
+    // by the current user with a very recent updated-time and a very old
+    // created-time still won't show up.
+    var filter string
+
+    if justAssigned == true {
+        filter = "assigned"
+    } else {
+        filter = "all"
+    }
+
     ilo := &github.IssueListOptions{
-        // "subscribed" doesn't work. Some events that are definitely
-        // subscribed-to by the current user with a very recent updated-time
-        // and a very old created-time still won't show up.
-        Filter:    "all",
+        Filter:    filter,
         State:     "open",
         Sort:      "updated",
         Direction: "desc",

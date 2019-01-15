@@ -28,6 +28,7 @@ type issueRemindersParameters struct {
     NearIntervalPhrase   string `long:"near-distance" description:"Time range to consider updates too recent to remind" default:"3 days ago"`
     EmailAddress         string `long:"email" description:"Send to the given email using an unauthenticated local SMTP server. In most cases it might be preferable to just capture the output and send the email using a more-advanced configuration elsewhere."`
     PrintAsHtml          bool   `long:"html" description:"Print HTML-formatted table"`
+    JustAssigned         bool   `long:"assigned" description:"Only print assigned issues (by default all associated issues are shown, but this allows you to control what is shown)"`
 }
 
 type subcommands struct {
@@ -86,7 +87,7 @@ func getIssues(issueRemindersArguments issueRemindersParameters) (issues []*gith
     gc, err := getClient(issueRemindersArguments.AuthenticationMixinParameters)
     log.PanicIf(err)
 
-    issues, err = ghreminder.GetIssues(ctx, gc, searchIntervalDuration)
+    issues, err = ghreminder.GetIssues(ctx, gc, searchIntervalDuration, issueRemindersArguments.JustAssigned)
     log.PanicIf(err)
 
     filtered := make([]*github.Issue, 0)
