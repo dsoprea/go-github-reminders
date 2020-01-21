@@ -89,8 +89,8 @@ func HasVeryRecentlyPosted(ctx context.Context, gc *github.Client, username stri
     sortDirection := "desc"
 
     ilco := &github.IssueListCommentsOptions{
-        Sort:      &sortBy,
-        Direction: &sortDirection,
+        Sort:      sortBy,
+        Direction: sortDirection,
     }
 
     commentsThis, _, err := gc.Issues.ListComments(ctx, owner, repository, *issue.Number, ilco)
